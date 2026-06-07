@@ -29,6 +29,31 @@ error() {
 }
 
 #
+# Daily query counter
+#
+
+daily_limit=100
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/tungsten"
+counter_file="$state_dir/query_count"
+mkdir -p "$state_dir"
+today="$(date +%Y-%m-%d)"
+
+if [ -f "$counter_file" ]; then
+    stored_date="$(sed -n '1p' "$counter_file")"
+    stored_count="$(sed -n '2p' "$counter_file")"
+else
+    stored_date=""
+    stored_count=0
+fi
+
+if [ "$stored_date" != "$today" ]; then
+    stored_count=0
+fi
+
+remaining=$((daily_limit - stored_count - 1))
+echo "WolframAlpha queries remaining today: $remaining / $daily_limit" >&2
+
+#
 # Load stored API key
 #
 
@@ -71,6 +96,7 @@ fi
 #
 # Perform the query
 #
+
 curl_args=(
     -sSf -G
     --data-urlencode "output=JSON"
@@ -118,6 +144,9 @@ if [ "$(query_result '.queryresult.error')" != "false" ]; then
     fi
 fi
 
+# Increment counter only after a successful query
+printf '%s\n%s\n' "$today" $((stored_count + 1)) >"$counter_file"
+
 # Only colourise if stdout is a terminal
 if [ -t 1 ]; then
     titleformat='\e[1;34m%s\e[m\n'
@@ -131,7 +160,7 @@ if [ "$(query_result '.queryresult.pods[0].subpods[0].plaintext')" == "null" ]; 
     exit 8
 fi
 
-# Print title+plaintext for each pod with text in it's subpod/plaintext child
+# Print title+plaintext for each pod with text in it's subpods/plaintext child
 while read -r title; do
     printf "$titleformat" "$title"
 
