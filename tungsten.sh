@@ -24,7 +24,7 @@
 
 set -euo pipefail
 
-error () {
+error() {
     echo "$@" >&2
 }
 
@@ -33,22 +33,18 @@ error () {
 #
 
 key_path="$HOME/.wolfram_api_key"
-key_pattern='[A-Z0-9]{6}-[A-Z0-9]{10}'
+key_pattern='^[A-Z0-9]{10}$'
 
-if ! [ -v WOLFRAM_API_KEY ]
-then
-    if [ -f "$key_path" ]
-    then
+if ! [ -v WOLFRAM_API_KEY ]; then
+    if [ -f "$key_path" ]; then
         # Load the contents of $key_path file as WOLFRAM_API_KEY
         WOLFRAM_API_KEY="$(<"$key_path")"
-        if ! [[ "$WOLFRAM_API_KEY" =~ $key_pattern ]]
-        then
+        if ! [[ "$WOLFRAM_API_KEY" =~ $key_pattern ]]; then
             error "WolframAlpha API key read from file '$key_path' doesn't match the validation pattern"
             exit 2
         fi
 
-    elif [ -e "$key_path" ]
-    then
+    elif [ -e "$key_path" ]; then
         error "WolframAlpha API key path '$key_path' exists, but isn't a file."
         exit 3
 
@@ -63,8 +59,7 @@ fi
 
 query="${@:-}"
 
-if [ -z "$query" ]
-then
+if [ -z "$query" ]; then
     error "You must specify a query to make"
     exit 5
 fi
@@ -78,8 +73,7 @@ curl_args=(
     --data-urlencode "format=plaintext"
     --data-urlencode "input=$query"
 )
-if [ -n "$WOLFRAM_API_KEY" ]
-then
+if [ -n "$WOLFRAM_API_KEY" ]; then
     curl_args+=(
         --data-urlencode "appid=$WOLFRAM_API_KEY"
         "https://api.wolframalpha.com/v2/query"
@@ -101,18 +95,16 @@ result="$(curl "${curl_args[@]}" | iconv -f "$iconv_from" -t UTF-8)"
 # Process the result of the query
 #
 
-query_result () {
+query_result() {
     set -euo pipefail
     jq -r "$1" <<<"$result"
 }
 
 # Handle error results
-if [ "$(query_result '.queryresult.error')" != "false" ]
-then
+if [ "$(query_result '.queryresult.error')" != "false" ]; then
     error_msg="$(query_result '.queryresult.error.msg')"
 
-    if [ "$error_msg" = "Invalid appid" ]
-    then
+    if [ "$error_msg" = "Invalid appid" ]; then
         error "WolframAlpha API rejected the given API key"
         error "Modify or remove the key stored in file '$key_path'"
         exit 6
@@ -123,23 +115,20 @@ then
 fi
 
 # Only colourise if stdout is a terminal
-if [ -t 1 ]
-then
+if [ -t 1 ]; then
     titleformat='\e[1;34m%s\e[m\n'
 else
     titleformat='%s\n'
 fi
 
 # Handle "cannot iterate over null" jq error
-if [ "$(query_result '.queryresult.pods[0].subpods[0].plaintext')" == "null" ]
-then
+if [ "$(query_result '.queryresult.pods[0].subpods[0].plaintext')" == "null" ]; then
     error "WolframAlpha API returned no results for the given query"
     exit 8
 fi
 
 # Print title+plaintext for each pod with text in it's subpod/plaintext child
-while read -r title
-do
+while read -r title; do
     printf "$titleformat" "$title"
 
     # Process the >0 plaintext elements decendent of the current pod
