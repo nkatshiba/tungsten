@@ -48,19 +48,42 @@ When outputting to a terminal, the output is colourised.
 
 Tungsten requires the following packages: `curl`, `jq`, and `bash`, as well as the POSIX `iconv` command, which is often provided by libc packages like `glibc`. Provided that these are installed, the script can be run in-place, or included in your PATH.
 
+## API Key
+
+Tungsten resolves the API key in the following order:
+
+1. **`WOLFRAM_API_KEY` environment variable** — if set, it is used directly and no further lookup is performed.
+2. **`pass`** — if the [`pass`](https://www.passwordstore.org/) password manager is installed, Tungsten will attempt to read the key from `pass wolframalpha.com/tungsten-api`. Store your key with:
+
+   pass insert wolframalpha.com/tungsten-api
+
+3. **`~/.wolfram_api_key`** — fallback plaintext file. Create it with:
+
+   echo "YOURAPIKEY" > ~/.wolfram_api_key
+   chmod 600 ~/.wolfram_api_key
+
+Using `pass` is recommended as it keeps the key encrypted on disk.
+
 ## Changelog
+
+### 2.2
+
+- Add `pass` password manager support for encrypted API key storage
+- Update API key validation pattern to match new WolframAlpha key format
 
 ### 2.1
 
-* Handle null results gracefully. Thanks to @federicotorrielli
+- Handle null results gracefully. Thanks to @federicotorrielli
 
 ### 2.0
 
-* Swap `xmlstarlet` dependency out for `jq` (JSON backend instead of XML). This avoids a class of bugs from XML handling.
-* Support for simple queries without an API Key. Thanks to @theblazehen
+- Swap `xmlstarlet` dependency out for `jq` (JSON backend instead of XML). This avoids a class of bugs from XML handling.
+- Support for simple queries without an API Key. Thanks to @theblazehen
 
 ### 1.1
-*   Add XML un-escape to fix seeing things like `&amp;` in the results
+
+- Add XML un-escape to fix seeing things like `&amp;` in the results
 
 ### 1.0
-*   Initial release
+
+- Initial release

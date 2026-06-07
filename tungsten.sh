@@ -36,20 +36,24 @@ key_path="$HOME/.wolfram_api_key"
 key_pattern='^[A-Z0-9]{10}$'
 
 if ! [ -v WOLFRAM_API_KEY ]; then
-    if [ -f "$key_path" ]; then
-        # Load the contents of $key_path file as WOLFRAM_API_KEY
-        WOLFRAM_API_KEY="$(<"$key_path")"
-        if ! [[ "$WOLFRAM_API_KEY" =~ $key_pattern ]]; then
-            error "WolframAlpha API key read from file '$key_path' doesn't match the validation pattern"
-            exit 2
+    if command -v pass &>/dev/null; then
+        WOLFRAM_API_KEY="$(pass wolframalpha.com/tungsten-api 2>/dev/null || true)"
+    fi
+
+    if [ -z "${WOLFRAM_API_KEY:-}" ]; then
+        if [ -f "$key_path" ]; then
+            WOLFRAM_API_KEY="$(<"$key_path")"
+        elif [ -e "$key_path" ]; then
+            error "WolframAlpha API key path '$key_path' exists, but isn't a file."
+            exit 3
+        else
+            WOLFRAM_API_KEY=""
         fi
+    fi
 
-    elif [ -e "$key_path" ]; then
-        error "WolframAlpha API key path '$key_path' exists, but isn't a file."
-        exit 3
-
-    else
-        WOLFRAM_API_KEY=""
+    if [ -n "$WOLFRAM_API_KEY" ] && ! [[ "$WOLFRAM_API_KEY" =~ $key_pattern ]]; then
+        error "WolframAlpha API key doesn't match the validation pattern"
+        exit 2
     fi
 fi
 
